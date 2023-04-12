@@ -9,12 +9,16 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,6 +28,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 0;
@@ -37,16 +43,25 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;                     // Required for every bluetooth activities
 
+    private boolean isBluetoothDiscoveryStarted = false;
+
     // Step 3. Define BLE devices scanning functions
     private boolean isScanningAllowed = false;
     private boolean isConnexionAllowed = false;
     private BluetoothLeScanner bluetoothLeScanner;
     private boolean scanning = false;
     private Handler handler = new Handler();
+    /*private LeDeviceListAdapter leDeviceListAdapter = new LeDeviceListAdapter();*/
+
     private ScanCallback leScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result)
         {
+            super.onScanResult(callbackType, result);
+
+            /*leDeviceListAdapter.addDevice(result.getDevice());
+            leDeviceListAdapter.notifyDataSetChanged();*/
+
             Toast.makeText(getApplicationContext(), "Chopper a trouvé un appareil !", Toast.LENGTH_SHORT).show();
             System.out.println(result);
         }
@@ -54,6 +69,23 @@ public class MainActivity extends AppCompatActivity {
 
     // Scan stops after 10 seconds
     private final long SCAN_PERIOD = 10000;
+
+    // Create a BroadcastReceiver for ACTION_FOUND
+    private final BroadcastReceiver receiver = new BroadcastReceiver()
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            String action = intent.getAction();
+            if (BluetoothDevice.ACTION_FOUND.equals(action))
+            {
+                // Discorvery has found a device. Get the bluetooth device
+                // object and its indo from the Intent.
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                System.out.println("\nDiscovered device.\nName: " + device.getName() + "\nMAC: " + device.getAddress());
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
             finish();
         }
+        System.out.println("Test");
 
         // Step 1. get bluetooth adapter
         bluetoothManager = getSystemService(BluetoothManager.class);
@@ -83,6 +116,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Step 3. Prepare scanning parameters
         bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(receiver, filter);
 
         setContentView(R.layout.activity_main2);
 
@@ -111,7 +146,13 @@ public class MainActivity extends AppCompatActivity {
         scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                scanLeDevice();
+                if (!bluetoothAdapter.isEnabled())
+                    Toast.makeText(getApplicationContext(), "Le bluetooth n'est pas activé...", Toast.LENGTH_SHORT).show();
+                else
+                {
+                    scanBluetoothDevice();
+                    scanLeDevice();
+                }
             }
         });
 
@@ -172,7 +213,32 @@ public class MainActivity extends AppCompatActivity {
                 customPopup.build();*/
             }
         });
+    }
 
+    @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+
+        // Don't forget to unregister the ACTION_FOUND receiver.
+        unregisterReceiver(receiver);
+    }
+
+    private void scanBluetoothDevice()
+    {
+        // Paired devices
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+
+        if (pairedDevices.size() > 0)
+        {
+            for (BluetoothDevice device : pairedDevices)
+            {
+                System.out.println("\nPaired Device.\nName: " + device.getName() + "\nMAC: " + device.getAddress());
+            }
+        }
+
+        // Discover devices
+        isBluetoothDiscoveryStarted = bluetoothAdapter.startDiscovery();
     }
 
     private void scanLeDevice()
