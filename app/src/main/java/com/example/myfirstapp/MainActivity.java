@@ -10,7 +10,10 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
@@ -52,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean scanning = false;
     private Handler handler = new Handler();
     /*private LeDeviceListAdapter leDeviceListAdapter = new LeDeviceListAdapter();*/
+    private BluetoothGatt bluetoothGatt;
 
     private ScanCallback leScanCallback = new ScanCallback() {
         @Override
@@ -82,7 +86,32 @@ public class MainActivity extends AppCompatActivity {
                 // Discorvery has found a device. Get the bluetooth device
                 // object and its indo from the Intent.
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                System.out.println("\nDiscovered device.\nName: " + device.getName() + "\nMAC: " + device.getAddress());
+                //System.out.println("\nDiscovered device.\nName: " + device.getName() + "\nMAC: " + device.getAddress());
+
+                // Test connection BLE
+                if (device.getAddress().equals("F5:84:FF:D6:BD:19"))
+                {
+                    System.out.println("µC Trouvé");
+                    bluetoothGatt = device.connectGatt(context, false, gattCallback);
+                }
+            }
+        }
+    };
+
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback()
+    {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
+        {
+            super.onConnectionStateChange(gatt, status, newState);
+            System.out.println("New state: " + newState);
+            if (newState == BluetoothProfile.STATE_CONNECTED)
+            {
+                // SUCCESS, connect to the gatt server
+            }
+            else
+            {
+                // FAILURE, disconnect from the gatt server
             }
         }
     };
@@ -243,6 +272,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void scanLeDevice()
     {
+        if (bluetoothLeScanner == null)
+        {
+            Toast.makeText(activity, "BluetoothLeScanner is null", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (!scanning) {
             // Scan until defined period elapsed
             handler.postDelayed(new Runnable() {
