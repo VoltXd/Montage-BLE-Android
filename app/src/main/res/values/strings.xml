@@ -7,4 +7,6 @@
     <string name="no">NON</string>
     <string name="ble_not_supported">Bluetooth Low Energy indisponible</string>
     <string name="ble_adapter_null">Bluetooth adapter not built</string>
+    <string name="connected">Connecté au µC</string>
+    <string name="disconnected">Déconnecté</string>
 </resources>

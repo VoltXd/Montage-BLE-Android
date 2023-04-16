@@ -55,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean scanning = false;
     private Handler handler = new Handler();
     /*private LeDeviceListAdapter leDeviceListAdapter = new LeDeviceListAdapter();*/
-    private BluetoothGatt bluetoothGatt;
 
     private ScanCallback leScanCallback = new ScanCallback() {
         @Override
@@ -86,32 +85,27 @@ public class MainActivity extends AppCompatActivity {
                 // Discorvery has found a device. Get the bluetooth device
                 // object and its indo from the Intent.
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                //System.out.println("\nDiscovered device.\nName: " + device.getName() + "\nMAC: " + device.getAddress());
+                System.out.println("\nDiscovered device.\nName: " + device.getName() + "\nMAC: " + device.getAddress());
+
+                if (device.getName() == null)
+                    return;
 
                 // Test connection BLE
-                if (device.getAddress().equals("F5:84:FF:D6:BD:19"))
+                if (device.getName().equals("Button"))
                 {
+                    bluetoothAdapter.cancelDiscovery();
                     System.out.println("µC Trouvé");
-                    bluetoothGatt = device.connectGatt(context, false, gattCallback);
-                }
-            }
-        }
-    };
+                    Intent deviceControlActivity_intent = new Intent(getApplicationContext(), DeviceControlActivity.class);
 
-    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback()
-    {
-        @Override
-        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
-        {
-            super.onConnectionStateChange(gatt, status, newState);
-            System.out.println("New state: " + newState);
-            if (newState == BluetoothProfile.STATE_CONNECTED)
-            {
-                // SUCCESS, connect to the gatt server
-            }
-            else
-            {
-                // FAILURE, disconnect from the gatt server
+                    // Put the device address in the intent
+                    Bundle bundle = new Bundle();
+                    bundle.putString("DeviceAddress", device.getAddress());
+                    deviceControlActivity_intent.putExtras(bundle);
+
+                    // Switch activities
+                    startActivity(deviceControlActivity_intent);
+                    finish();
+                }
             }
         }
     };
