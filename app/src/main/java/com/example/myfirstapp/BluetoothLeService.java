@@ -97,6 +97,7 @@ public class BluetoothLeService extends Service
             final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
             // connect to the GATT server on the device
             bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
+            bluetoothGatt.connect();
             return true;
         }
         catch (IllegalArgumentException e)
