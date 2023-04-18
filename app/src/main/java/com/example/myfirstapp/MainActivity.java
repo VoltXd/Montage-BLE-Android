@@ -2,6 +2,8 @@ package com.example.myfirstapp;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,8 +36,14 @@ import android.widget.Toast;
 
 import java.util.Set;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+{
     private static final int REQUEST_ENABLE_BT = 0;
+    private final int REQUEST_BLUETOOTH_CONNECT = 1;
+    private final int REQUEST_BLUETOOTH_SCAN = 2;
+    private final int REQUEST_BLUETOOTH = 3;
+    private final int REQUEST_BLUETOOTH_ADMIN = 4;
+
     private Button play;
     private Button scan;
     private LinearLayout myDynamicLayout;
@@ -56,7 +64,8 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     /*private LeDeviceListAdapter leDeviceListAdapter = new LeDeviceListAdapter();*/
 
-    private ScanCallback leScanCallback = new ScanCallback() {
+    private ScanCallback leScanCallback = new ScanCallback()
+    {
         @Override
         public void onScanResult(int callbackType, ScanResult result)
         {
@@ -65,8 +74,30 @@ public class MainActivity extends AppCompatActivity {
             /*leDeviceListAdapter.addDevice(result.getDevice());
             leDeviceListAdapter.notifyDataSetChanged();*/
 
-            Toast.makeText(getApplicationContext(), "Chopper a trouvé un appareil !", Toast.LENGTH_SHORT).show();
-            System.out.println(result);
+            //Toast.makeText(getApplicationContext(), "Chopper a trouvé un appareil !", Toast.LENGTH_SHORT).show();
+
+
+            System.out.println("\nDiscovered LE device.\nName: " + result.getDevice().getName() + "\nMAC: " + result.getDevice().getAddress());
+
+            /*if (result.getDevice().getName() == null)
+                return;
+
+            // Test connection BLE
+            if (result.getDevice().getName().equals("GattServer"))
+            {
+                bluetoothAdapter.cancelDiscovery();
+                System.out.println("µC Trouvé");
+                Intent deviceControlActivity_intent = new Intent(getApplicationContext(), DeviceControlActivity.class);
+
+                // Put the device address in the intent
+                Bundle bundle = new Bundle();
+                bundle.putString("DeviceAddress", result.getDevice().getAddress());
+                deviceControlActivity_intent.putExtras(bundle);
+
+                // Switch activities
+                startActivity(deviceControlActivity_intent);
+                finish();
+            }*/
         }
     };
 
@@ -111,29 +142,87 @@ public class MainActivity extends AppCompatActivity {
     };
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+    {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode)
+        {
+            case REQUEST_BLUETOOTH_CONNECT:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    Toast.makeText(MainActivity.this, "Connect Permission Granted!", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+                    Toast.makeText(MainActivity.this, "Connect Permission Denied!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            case REQUEST_BLUETOOTH_SCAN:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    Toast.makeText(MainActivity.this, "Scan Permission Granted!", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+                    Toast.makeText(MainActivity.this, "Scan Permission Denied!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            case REQUEST_BLUETOOTH:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    Toast.makeText(MainActivity.this, "Bluetooth Permission Granted!", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+                    Toast.makeText(MainActivity.this, "Bluetooth Permission Denied!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            case REQUEST_BLUETOOTH_ADMIN:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    Toast.makeText(MainActivity.this, "Bluetooth_admin Permission Granted!", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+                    Toast.makeText(MainActivity.this, "Bluetooth_admin Permission Denied!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+        }
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
 
         // Use this check to determine whether BLE is supported on the device. Then
         // you can selectively disable BLE-related features.
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
+        {
             Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
             finish();
         }
-        System.out.println("Test");
 
         // Step 1. get bluetooth adapter
         bluetoothManager = getSystemService(BluetoothManager.class);
         bluetoothAdapter = bluetoothManager.getAdapter();
-        if (bluetoothAdapter == null) {
+        if (bluetoothAdapter == null)
+        {
             Toast.makeText(this, R.string.ble_adapter_null, Toast.LENGTH_SHORT).show();
             finish();
         }
 
         // Step 2. Enable bluetooth
-        if (!bluetoothAdapter.isEnabled()) {
+        if (!bluetoothAdapter.isEnabled())
+        {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
 
@@ -144,6 +233,54 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main2);
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.BLUETOOTH))
+            {
+                showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH, REQUEST_BLUETOOTH);
+            }
+            else
+            {
+                requestPermission(Manifest.permission.BLUETOOTH, REQUEST_BLUETOOTH);
+            }
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.BLUETOOTH_ADMIN))
+            {
+                showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH_ADMIN, REQUEST_BLUETOOTH_ADMIN);
+            }
+            else
+            {
+                requestPermission(Manifest.permission.BLUETOOTH_ADMIN, REQUEST_BLUETOOTH_ADMIN);
+            }
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.BLUETOOTH_CONNECT))
+            {
+                showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH_CONNECT, REQUEST_BLUETOOTH_CONNECT);
+            }
+            else
+            {
+                requestPermission(Manifest.permission.BLUETOOTH_CONNECT, REQUEST_BLUETOOTH_CONNECT);
+            }
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.BLUETOOTH_SCAN))
+            {
+                showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH_SCAN, REQUEST_BLUETOOTH_SCAN);
+            }
+            else
+            {
+                requestPermission(Manifest.permission.BLUETOOTH_SCAN, REQUEST_BLUETOOTH_SCAN);
+            }
+        }
+
         // Set the main activity to be this activity
         activity = this;
 
@@ -152,9 +289,11 @@ public class MainActivity extends AppCompatActivity {
         this.scan = (Button) findViewById(R.id.scan);
 
         // Set an OnClick event on the android image
-        play.setOnClickListener(new View.OnClickListener() {
+        play.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v)
+            {
                 // Declare which activity you want to be activated
                 Intent otherActivity = new Intent(getApplicationContext(), CookieActivity.class);
 
@@ -165,10 +304,12 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         });
-        
-        scan.setOnClickListener(new View.OnClickListener() {
+
+        scan.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View view) {
+            public void onClick(View view)
+            {
                 if (!bluetoothAdapter.isEnabled())
                     Toast.makeText(getApplicationContext(), "Le bluetooth n'est pas activé...", Toast.LENGTH_SHORT).show();
                 else
@@ -183,22 +324,28 @@ public class MainActivity extends AppCompatActivity {
         this.myDynamicLayout = (LinearLayout) findViewById(R.id.myDynamicLayout);
         this.imageChopper = (ImageView) findViewById(R.id.imageChopper);
 
-        imageChopper.setOnClickListener(new View.OnClickListener() {
+        imageChopper.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v)
+            {
                 // SIMPLE POP-UP
                 AlertDialog.Builder chopperPopup = new AlertDialog.Builder(activity);
                 chopperPopup.setTitle("BLE");
                 chopperPopup.setMessage("Rechercher des appareils BLE ?");
-                chopperPopup.setPositiveButton("Oui", new DialogInterface.OnClickListener() {
+                chopperPopup.setPositiveButton("Oui", new DialogInterface.OnClickListener()
+                {
                     @Override
-                    public void onClick(DialogInterface dialog, int which) {
+                    public void onClick(DialogInterface dialog, int which)
+                    {
                         Toast.makeText(getApplicationContext(), "Chopper a la flemme...", Toast.LENGTH_SHORT).show();
                     }
                 });
-                chopperPopup.setNegativeButton("Non", new DialogInterface.OnClickListener() {
+                chopperPopup.setNegativeButton("Non", new DialogInterface.OnClickListener()
+                {
                     @Override
-                    public void onClick(DialogInterface dialog, int which) {
+                    public void onClick(DialogInterface dialog, int which)
+                    {
                         Toast.makeText(getApplicationContext(), "Chopper attend...", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -249,6 +396,19 @@ public class MainActivity extends AppCompatActivity {
 
     private void scanBluetoothDevice()
     {
+        /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.BLUETOOTH_CONNECT))
+            {
+                showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH_CONNECT, REQUEST_BLUETOOTH_CONNECT);
+            }
+            else
+            {
+                requestPermission(Manifest.permission.BLUETOOTH_CONNECT, REQUEST_BLUETOOTH_CONNECT);
+            }
+            return;
+        }*/
+
         // Paired devices
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
 
@@ -266,17 +426,47 @@ public class MainActivity extends AppCompatActivity {
 
     private void scanLeDevice()
     {
+        /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.BLUETOOTH_SCAN))
+            {
+                showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH_SCAN, REQUEST_BLUETOOTH_SCAN);
+            }
+            else
+            {
+                requestPermission(Manifest.permission.BLUETOOTH_SCAN, REQUEST_BLUETOOTH_SCAN);
+            }
+            return;
+        }*/
+
         if (bluetoothLeScanner == null)
         {
             Toast.makeText(activity, "BluetoothLeScanner is null", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (!scanning) {
+        if (!scanning)
+        {
             // Scan until defined period elapsed
-            handler.postDelayed(new Runnable() {
+            handler.postDelayed(new Runnable()
+            {
                 @Override
-                public void run() {
+                public void run()
+                {
+                    /*if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+                    {
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(activity,
+                                Manifest.permission.BLUETOOTH_SCAN))
+                        {
+                            showExplanation("Permission Needed", "Rationale", Manifest.permission.BLUETOOTH_SCAN, REQUEST_BLUETOOTH_SCAN);
+                        }
+                        else
+                        {
+                            requestPermission(Manifest.permission.BLUETOOTH_SCAN, REQUEST_BLUETOOTH_SCAN);
+                        }
+                        return;
+                    }*/
                     scanning = false;
                     Toast.makeText(getApplicationContext(), "Chopper a cherché pendant 10 secondes...", Toast.LENGTH_SHORT).show();
                     bluetoothLeScanner.stopScan(leScanCallback);
@@ -294,5 +484,25 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "Chopper arrête sa recherche !", Toast.LENGTH_SHORT).show();
         }
 
+    }
+
+    private void showExplanation(String title,
+                                 String message,
+                                 final String permission,
+                                 final int permissionRequestCode) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        requestPermission(permission, permissionRequestCode);
+                    }
+                });
+        builder.create().show();
+    }
+
+    private void requestPermission(String permissionName, int permissionRequestCode) {
+        ActivityCompat.requestPermissions(this,
+                new String[]{permissionName}, permissionRequestCode);
     }
 }

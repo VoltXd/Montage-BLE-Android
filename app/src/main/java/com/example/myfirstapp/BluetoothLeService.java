@@ -48,7 +48,7 @@ public class BluetoothLeService extends Service
                 broadcastUpdate(ACTION_GATT_CONNECTED);
 
                 // Attemps to discover services after successful connection.
-                discoverServices();
+                //discoverServices();
             }
             else if (newState == BluetoothProfile.STATE_DISCONNECTED)
             {
@@ -70,17 +70,6 @@ public class BluetoothLeService extends Service
 
     public boolean discoverServices()
     {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-        {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return false;
-        }
         return bluetoothGatt.discoverServices();
     }
 
