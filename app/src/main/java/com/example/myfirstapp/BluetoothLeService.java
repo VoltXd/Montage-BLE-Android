@@ -1,5 +1,6 @@
 package com.example.myfirstapp;
 
+import android.Manifest;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -9,11 +10,13 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 
 import java.util.List;
 
@@ -45,7 +48,7 @@ public class BluetoothLeService extends Service
                 broadcastUpdate(ACTION_GATT_CONNECTED);
 
                 // Attemps to discover services after successful connection.
-                bluetoothGatt.discoverServices();
+                discoverServices();
             }
             else if (newState == BluetoothProfile.STATE_DISCONNECTED)
             {
@@ -64,6 +67,22 @@ public class BluetoothLeService extends Service
                 Log.w(TAG, "onServicesDiscovered received: " + status);
         }
     };
+
+    public boolean discoverServices()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+        {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return false;
+        }
+        return bluetoothGatt.discoverServices();
+    }
 
     public boolean initialize()
     {

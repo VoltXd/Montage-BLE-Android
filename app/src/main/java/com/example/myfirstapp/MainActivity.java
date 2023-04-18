@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                     return;
 
                 // Test connection BLE
-                if (device.getName().equals("Button"))
+                if (device.getName().equals("GattServer"))
                 {
                     bluetoothAdapter.cancelDiscovery();
                     System.out.println("µC Trouvé");
