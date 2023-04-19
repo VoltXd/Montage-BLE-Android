@@ -68,9 +68,9 @@ public class BluetoothLeService extends Service
         }
     };
 
-    public boolean discoverServices()
+    public void discoverServices()
     {
-        return bluetoothGatt.discoverServices();
+        System.out.println("Tentative de découverte de services : " + bluetoothGatt.discoverServices());
     }
 
     public boolean initialize()
