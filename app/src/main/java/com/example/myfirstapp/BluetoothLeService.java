@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -25,6 +26,8 @@ public class BluetoothLeService extends Service
     public final static String ACTION_GATT_CONNECTED = "com.example.myfirstapp.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED = "com.example.myfirstapp.ACTION_GATT_DISCONNECTED";
     public final static String ACTION_GATT_SERVICES_DISCOVERED = "com.example.myfirstapp.ACTION_GATT_SERVICES_DISCOVERED";
+    public final static String ACTION_DATA_AVAILABLE = "com.example.myfirstapp.ACTION_DATA_AVAILABLE";
+    public final static String EXTRA_DATA = "com.example.myfirstapp.EXTRA_DATA";
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTED = 2;
@@ -66,11 +69,47 @@ public class BluetoothLeService extends Service
             else
                 Log.w(TAG, "onServicesDiscovered received: " + status);
         }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
+        {
+            if (status == BluetoothGatt.GATT_SUCCESS)
+                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+        }
     };
 
     public void discoverServices()
     {
         System.out.println("Tentative de découverte de services : " + bluetoothGatt.discoverServices());
+    }
+
+    private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic)
+    {
+        final Intent intent = new Intent(action);
+
+        // Special handling for Clock.
+        if (SampleGattAttributes.HOURS_CHARAC_UUID.equals(characteristic.getUuid().toString()) ||
+            SampleGattAttributes.MINUTES_CHARAC_UUID.equals(characteristic.getUuid().toString()) ||
+            SampleGattAttributes.SECONDS_CHARAC_UUID.equals(characteristic.getUuid().toString()))
+        {
+            int format = BluetoothGattCharacteristic.FORMAT_UINT8;
+            final int number = characteristic.getIntValue(format, 0);
+            intent.putExtra(EXTRA_DATA, String.valueOf(number));
+        }
+        else
+        {
+            // For all other characteristics, write data in HEX format
+            final byte[] data = characteristic.getValue();
+            if (data != null && data.length > 0)
+            {
+                final StringBuilder stringBuilder = new StringBuilder(data.length);
+                for (byte byteChar : data)
+                    stringBuilder.append(String.format("%02X ", byteChar));
+                intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
+            }
+        }
+
+        sendBroadcast(intent);
     }
 
     public boolean initialize()
@@ -152,5 +191,16 @@ public class BluetoothLeService extends Service
             return null;
 
         return bluetoothGatt.getServices();
+    }
+
+    public void readCharacteristic(BluetoothGattCharacteristic characteristic)
+    {
+        if (bluetoothGatt == null)
+        {
+            Log.w(TAG, "BluetoothGatt not initialized");
+            return;
+        }
+
+        bluetoothGatt.readCharacteristic(characteristic);
     }
 }
