@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Montage BLE Android</string>
-    <string name="welcome_msg">Bienvenue !\nClique sur Chopper !</string>
-    <string name="pat_string">Caresses : 0</string>
-    <string name="button_name">Chopper</string>
+    <string name="welcome_msg">Bienvenue !</string>
+    <string name="pat_string">Score : 0</string>
+    <string name="button_name">Play</string>
     <string name="yes">OUI</string>
     <string name="no">NON</string>
     <string name="ble_not_supported">Bluetooth Low Energy indisponible</string>

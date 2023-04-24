@@ -1,6 +1,7 @@
 package com.example.myfirstapp;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
@@ -9,6 +10,7 @@ import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -18,6 +20,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ExpandableListView;
+import android.widget.ImageView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
@@ -38,6 +41,8 @@ public class DeviceControlActivity extends AppCompatActivity
     private ExpandableListView gattServicesList;
     private TextView data_textView;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics;
+    private ImageView drawableChopper;
+    private DeviceControlActivity activity;
     private ServiceConnection serviceConnection = new ServiceConnection()
     {
         @Override
@@ -67,65 +72,98 @@ public class DeviceControlActivity extends AppCompatActivity
     protected void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_device_control);
-        connectionStatus_textView = findViewById(R.id.connection_status);
-        connectButton = findViewById(R.id.gatt_connect_button);
-        discoverServicesButton = findViewById(R.id.gatt_discover_services_button);
-        gattServicesList = findViewById(R.id.gatt_services_list);
-        gattServicesList.setOnChildClickListener(new ExpandableListView.OnChildClickListener()
+        activity = this;
+        drawableChopper = new ImageView(this);
+        drawableChopper.setImageResource(R.drawable.chopper);
+
+        if (!IfDef.GATT_CONNECT)
         {
-            @Override
-            public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id)
+            // Instruction pour la connexion
+            AlertDialog.Builder chopperPopup = new AlertDialog.Builder(activity);
+
+            chopperPopup.setTitle("Connexion au serveur GATT");
+            chopperPopup.setMessage("Pour se connecter au GATT il faut :\n" +
+                                    "- Créer un service lié (et le déclarer dans le manifeste !) qui va :\n" +
+                                    "\t\t- Re-initialiser un \"BluetoothAdapter\"\n" +
+                                    "\t\t- Se connecter à l'appareil\n" +
+                                    "\t\t- Se connecter au serveur GATT\n" +
+                                    "\t\t- Informer l'activité courante des événements\n" +
+                                    "\t\t- Fermer la connexion quand on en a plus besoin");
+            chopperPopup.setNeutralButton("OK", new DialogInterface.OnClickListener()
             {
-                if (mGattCharacteristics != null)
+                @Override
+                public void onClick(DialogInterface dialog, int which)
                 {
-                    final BluetoothGattCharacteristic characteristic = mGattCharacteristics.get(groupPosition).get(childPosition);
-                    final int charaProp = characteristic.getProperties();
-                    if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0)
-                    {
-                        if (false)
-                        {
-                            // TODO: IF statement to notifications clear
-                        }
-                        bluetoothLeService.readCharacteristic(characteristic);
-                    }
-                    if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0)
-                    {
-                        // TODO: IF statement to manage notifications
-                    }
-                    return true;
+
                 }
-                return false;
-            }
-        });
-        data_textView = findViewById(R.id.data_value);
+            });
+            chopperPopup.setView(drawableChopper);
 
-        Bundle bundle = getIntent().getExtras();
-        if (bundle != null)
-            deviceAddress = bundle.getString("DeviceAddress");
+            chopperPopup.show();
+        }
 
-        connectButton.setOnClickListener(new View.OnClickListener()
+        if (IfDef.GATT_CONNECT)
         {
-            @Override
-            public void onClick(View view)
-            {
-                if (bluetoothLeService != null)
-                    bluetoothLeService.connect(deviceAddress);
-            }
-        });
+            Bundle bundle = getIntent().getExtras();
+            if (bundle != null)
+                deviceAddress = bundle.getString("DeviceAddress");
 
-        discoverServicesButton.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
+            setContentView(R.layout.activity_device_control);
+            connectionStatus_textView = findViewById(R.id.connection_status);
+            connectButton = findViewById(R.id.gatt_connect_button);
+            discoverServicesButton = findViewById(R.id.gatt_discover_services_button);
+            data_textView = findViewById(R.id.data_value);
+            gattServicesList = findViewById(R.id.gatt_services_list);
+            gattServicesList.setOnChildClickListener(new ExpandableListView.OnChildClickListener()
             {
-                if (bluetoothLeService != null)
-                    bluetoothLeService.discoverServices();
-            }
-        });
+                @Override
+                public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id)
+                {
+                    if (mGattCharacteristics != null)
+                    {
+                        final BluetoothGattCharacteristic characteristic = mGattCharacteristics.get(groupPosition).get(childPosition);
+                        final int charaProp = characteristic.getProperties();
+                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0)
+                        {
+                            if (false)
+                            {
+                                // TODO: IF statement to notifications clear
+                            }
+                            bluetoothLeService.readCharacteristic(characteristic);
+                        }
+                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0)
+                        {
+                            // TODO: IF statement to manage notifications
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
 
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-        getApplicationContext().bindService(gattServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            connectButton.setOnClickListener(new View.OnClickListener()
+            {
+                @Override
+                public void onClick(View view)
+                {
+                    if (bluetoothLeService != null)
+                        bluetoothLeService.connect(deviceAddress);
+                }
+            });
+
+            discoverServicesButton.setOnClickListener(new View.OnClickListener()
+            {
+                @Override
+                public void onClick(View view)
+                {
+                    if (bluetoothLeService != null)
+                        bluetoothLeService.discoverServices();
+                }
+            });
+
+            Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+            getApplicationContext().bindService(gattServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        }
     }
 
     private void clearGattList()
@@ -146,6 +184,23 @@ public class DeviceControlActivity extends AppCompatActivity
             {
                 connected = true;
                 updateConnectionState(R.string.connected);
+
+                // Instruction pour la connexion
+                AlertDialog.Builder chopperPopup = new AlertDialog.Builder(activity);
+
+                chopperPopup.setTitle("Connecté au serveur GATT !");
+                chopperPopup.setMessage("Il ne reste plus qu'à récupérer des données !");
+                chopperPopup.setNeutralButton("OK", new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which)
+                    {
+
+                    }
+                });
+                chopperPopup.setView(drawableChopper);
+
+                chopperPopup.show();
 
                 connectButton.setEnabled(false);
                 discoverServicesButton.setEnabled(true);

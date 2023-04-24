@@ -27,7 +27,7 @@ public class CookieActivity extends AppCompatActivity {
             public void onClick(View v)
             {
                 numberOfPats++;
-                pat.setText("Caresses : " + numberOfPats);
+                pat.setText("Score : " + numberOfPats);
             }
         });
     }
