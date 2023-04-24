@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MyFirstApp</string>
+    <string name="app_name">Montage BLE Android</string>
     <string name="welcome_msg">Bienvenue !\nClique sur Chopper !</string>
     <string name="pat_string">Caresses : 0</string>
     <string name="button_name">Chopper</string>
